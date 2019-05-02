@@ -1,0 +1,226 @@
+#### Exercise 1: Setup
+
+__1.a__ Install the tidyverse and knitr.
+
+```{r, message = FALSE}
+library()
+```
+
+__1.b__ Load the `tidyverse`, `knitr`, and set the precision to 2 digits.
+
+```{r, message=FALSE}
+
+library(tidyverse)
+library(knitr)
+
+```
+
+#### Exercise 2: Edgar Anderson's Iris Data
+
+In this exercise, you will analyze a well-known `iris` dataset, which you studied in Machine Learning In Business Analytics course. The dataset contains measurements in centimeters of the variables sepal length and width and petal length and width, respectively for each type of iris, namely, setosa, versicolor, and virginica.
+
+__2.a__ Load the dataset `iris` and convert it into `tibble`. How many columns does the dataset have? Name data types of these columns.
+
+```{r, message=FALSE}
+
+iris_df <- as_tibble(iris) #Convert iris data into tibble
+
+#number of columns 
+ncol(iris_df)
+
+#Data types
+Data_types <- iris_df %>% 
+ summarise_all(class)
+
+```
+
+__2.b__ Print out only species and its length of a sepal in ascending order. Print out same columns in using descending order of sepal length.
+
+```{r, message = FALSE}
+#Ascending - default
+iris_df %>%
+ select(Sepal.Length,Species) %>%
+  arrange(Sepal.Length) %>%
+   print()
+
+#Descending
+iris_df %>%
+ select(Sepal.Length,Species) %>%
+  arrange(desc(Sepal.Length)) %>%
+   print()
+```
+
+__2.c__ Create a new object `iris_species` and assign to it the `iris` tibble grouped by the type of `Species`. How many entries does each `Species` have?
+
+```{r, message=FALSE}
+
+iris_species <- iris_df %>%  # create the object
+ group_by(Species) %>%       #apply function group by 
+ count() %>%                #apply function count
+ print()
+
+
+
+```
+
+__2.d__ Print out the average sepal's and petal's length and width for each species. What can be noticed?
+
+```{r, message=FALSE}
+
+iris_df %>% 
+ select(Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species)%>%
+ group_by(Species)%>%
+ summarise(mean(Sepal.Length),mean(Sepal.Width),mean(Petal.Length),mean(Petal.Width))
+#We notice that Sepal.Width doesn't seem to be a good differenciator between versicolor and virginica and that virginica is globally bigger
+
+```
+
+__2.e__ Modify `iris_species` by adding a new column of standardized petal's length (i.e., you need to subtract a mean value from each observation and divide by standard deviation). Print the maximum values of this new variable for each species.
+
+```{r, message=FALSE}
+
+iris_species <- mutate(iris_df, 
+       SPL = max(Petal.Length- mean(Petal.Length))/sd(Petal.Length)) 
+
+iris_species %>%
+ select(SPL,Species) %>%
+ group_by(Species)%>%
+ summarise(max())
+ 
+```
+
+__2.f__ Using the original `iris` tibble visualize the relation between petal's length and petal's width by plotting a scatter chart. Bonus: display a (linear) regression line without confidence intervals.
+
+```{r, message = FALSE}
+
+iris_df %>%
+ select(Petal.Length,Petal.Width)%>%
+ ggplot(aes(x=Petal.Length, y=Petal.Width)) +
+ geom_point(color = "green", shape = "star") +
+ labs(x = "Petal Length", y= "Petal Width") +
+ geom_smooth(method = "lm", se =FALSE)
+
+```
+
+__2.g__ Modify previous plot by using different colors for each species only for the scatter chart and not for the regression line.
+
+```{r, message = FALSE}
+
+iris_df %>%
+ select(Petal.Length,Petal.Width,Species)%>%
+ ggplot(aes(x=Petal.Length, y=Petal.Width)) +
+ geom_point(aes(color = Species)) +
+ labs(x = "Petal Length", y= "Petal Width") +
+ geom_smooth(method = "lm",se=FALSE)
+
+```
+
+#### Exercise 3: House Prices
+
+In this exercise, you will work with the [house prices dataset obtained from Kaggle](https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data).
+The dataset contains 81 columns describing (almost) every aspect of residential homes in Ames, Iowa.
+
+__3.a__ Save the [data file](https://raw.githubusercontent.com/tvatter/dsfba_2019/homework/data/house_prices.csv) in `data` folder of your project. Load the dataset into the global environment by using function `read_csv` and assign it to variable `house_prices`. Make sure that the class of `house_prices` is a tibble.
+
+```{r, message = FALSE}
+#install.packages('here')
+#install.packages("dplyr")  # alternative installation of the %>%
+#install.packages("ggplot2", dependencies = TRUE)
+library(ggplot2)
+library(here)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(dplyr) 
+
+price_df <- read.csv(here("data", "house_prices.csv"), header=TRUE)
+
+price_df %>% 
+  as_tibble()
+
+```
+
+__3.b__ You will work with only four variables, namely, `LotArea`, `KitchenQual`, `LotShape`, and `SalePrice`, which indicate area (in square feet), kitchen quality, general shape, and sale price (in dollars) of property. 
+Modify `house_prices` to have only these four columns, as well as transform `LotArea` from square feet into square meters. Bonus: try to use only one `dplyr` function.
+
+```{r, message = FALSE}
+
+# Creation of a new tibble only composed of the 4 variables of interest.
+price_df %>% 
+  select(LotArea,KitchenQual, LotShape, SalePrice) %>%
+    mutate(LotArea = LotArea*0.093) -> price_sqm_df
+
+price_sqm_df
+
+```
+
+__3.c__ For how many lots have the sale price was greater than its mean value?
+
+```{r, message = FALSE}
+
+sum(price_sqm_df$SalePrice >  mean(price_sqm_df$SalePrice))
+
+```
+
+
+__3.d__ Display the average sale price for each kitchen quality level.
+
+  Note, levels of `KitchenQual` correspond to the followin values:
+
+    - Ex -- Excellent,
+    - Gd -- Good,
+    - TA -- Typical/Average,
+    - Fa -- Fair
+    - Po -- Poor
+
+```{r, message = FALSE}
+
+aggregate(price_sqm_df$SalePrice, by=list(KitchenQuality=price_sqm_df$KitchenQual), FUN=mean)
+
+```
+
+__3.e__ Display ten randomly selected observations from the dataset. What happens if you execute your code a few times? How can you make sure that each execution returns the exact 10 rows?
+
+```{r, message = FALSE}
+set.seed(1207) 
+
+price_sqm_df[sample(nrow(price_sqm_df), size=10),]
+
+```
+
+__3.f__ Print out the minimum price of observations for which shape is regular (i.e., `"Reg"`), and the kitchen has excellent quality.
+
+```{r, message = FALSE}
+
+price_qual_df <- aggregate(price_sqm_df$SalePrice, by=list(KitchenQuality=price_sqm_df$KitchenQual), FUN=min)
+
+price_qual_df[price_qual_df$KitchenQual == 'Ex' ,]
+
+```
+
+__3.g__ Produce boxplots with kitchen quality as the x-axis and the price as the y-axis. Regroup kitchen quality in the following order: excellent, good, typical/average, and fair. What can you say about the relationship between kitchen quality and the price?
+
+```{r, message = FALSE}
+
+f <- factor(price_sqm_df$KitchenQual, levels = c("Ex", "Gd", "TA", "Fa"))
+
+price_sqm_df %>% 
+  mutate(KitchenQual = f)%>%
+  ggplot(mapping = aes(x=KitchenQual, y=SalePrice)) +
+  geom_boxplot() +labs(y="Price ($)", x="Quality of the kitchen") + 
+  ggtitle("Boxplot of prices ($) based on the kitchen quality")
+
+print('The price is linearly corrolated to Kitchen quality, the higher the quality the higher the price')
+
+```
+
+__3.h__ Draw a scatter chart to investigate the dependence between `LotArea` and `SalePrice`. Further, use different colors depending on the kitchen quality, and different shapes depending on the shape of the property. 
+
+```{r, message = FALSE}
+
+price_sqm_df %>% 
+  select(LotArea,SalePrice,KitchenQual,LotShape) %>%
+    ggplot(mapping = aes(x=LotArea, y=SalePrice, color = KitchenQual, shape = LotShape)) + 
+geom_point() + labs(x="Lot Area in square meters", y="Sale Price in Dollars") + 
+  ggtitle("Scatterplot of price and the area")
+
+```
+
